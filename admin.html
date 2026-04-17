@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopBot 2 — Admin</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; color: #1e293b; }
+  header { background: #1e293b; color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-size: 1.2rem; }
+  .badge { background: #2563eb; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; }
+
+  .tabs { display: flex; gap: 4px; padding: 16px 24px 0; border-bottom: 2px solid #e2e8f0; background: white; }
+  .tab { padding: 10px 20px; border: none; background: none; cursor: pointer; font-size: 0.95rem; color: #64748b; border-bottom: 3px solid transparent; margin-bottom: -2px; font-weight: 500; }
+  .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+
+  .content { padding: 24px; max-width: 1200px; margin: auto; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .stat-label { font-size: 0.85rem; color: #64748b; margin-bottom: 6px; }
+  .stat-value { font-size: 1.8rem; font-weight: 700; color: #1e293b; }
+  .stat-card.blue .stat-value { color: #2563eb; }
+  .stat-card.green .stat-value { color: #16a34a; }
+  .stat-card.orange .stat-value { color: #ea580c; }
+
+  /* Orders Table */
+  .card { background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 20px; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+  .card-header h2 { font-size: 1rem; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { background: #f8fafc; padding: 12px 16px; text-align: left; font-weight: 600; color: #64748b; font-size: 0.8rem; text-transform: uppercase; }
+  td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+
+  .status-badge { padding: 3px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+  .s-placed { background: #fef9c3; color: #854d0e; }
+  .s-confirmed { background: #dcfce7; color: #166534; }
+  .s-shipped { background: #dbeafe; color: #1e40af; }
+  .s-out_for_delivery { background: #fce7f3; color: #9d174d; }
+  .s-delivered { background: #d1fae5; color: #065f46; }
+  .s-cancelled { background: #fee2e2; color: #991b1b; }
+  .p-paid { background: #d1fae5; color: #065f46; }
+  .p-pending { background: #fef9c3; color: #854d0e; }
+
+  select.status-select { border: 1px solid #e2e8f0; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
+  .action-btn { background: #2563eb; color: white; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; margin-left: 4px; }
+  .action-btn.green { background: #16a34a; }
+  .action-btn.red { background: #dc2626; }
+
+  /* Filter row */
+  .filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-btn { padding: 7px 16px; border: 1px solid #e2e8f0; border-radius: 20px; cursor: pointer; font-size: 0.85rem; background: white; }
+  .filter-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+
+  /* Products Form */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 5px; color: #475569; }
+  .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; }
+  .form-group.full { grid-column: 1/-1; }
+  .submit-btn { background: #2563eb; color: white; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+
+  /* Settings */
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* WhatsApp test */
+  .wa-test { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+  .wa-test h3 { color: #15803d; margin-bottom: 10px; }
+  .wa-row { display: flex; gap: 10px; }
+  .wa-row input { flex: 1; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 8px; }
+
+  .notif { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 20px; border-radius: 10px; font-size: 0.9rem; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .notif.show { opacity: 1; }
+
+  @media (max-width: 600px) {
+    .form-grid, .settings-grid { grid-template-columns: 1fr; }
+    .tabs { overflow-x: auto; }
+    table { font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🛍️ ShopBot 2 — Admin Panel</h1>
+  <span class="badge">Admin</span>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('orders')">📦 Orders</button>
+  <button class="tab" onclick="switchTab('products')">🏷️ Products</button>
+  <button class="tab" onclick="switchTab('settings')">⚙️ Settings</button>
+</div>
+
+<div class="content">
+
+  <!-- ORDERS TAB -->
+  <div id="tab-orders">
+    <div class="stats" id="statsRow">
+      <div class="stat-card blue"><div class="stat-label">Total Orders</div><div class="stat-value" id="statTotal">—</div></div>
+      <div class="stat-card green"><div class="stat-label">Revenue</div><div class="stat-value" id="statRevenue">—</div></div>
+      <div class="stat-card orange"><div class="stat-label">Pending</div><div class="stat-value" id="statPending">—</div></div>
+      <div class="stat-card"><div class="stat-label">Delivered</div><div class="stat-value" id="statDelivered">—</div></div>
+    </div>
+
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="filterOrders('')">All</button>
+      <button class="filter-btn" onclick="filterOrders('placed')">New</button>
+      <button class="filter-btn" onclick="filterOrders('confirmed')">Confirmed</button>
+      <button class="filter-btn" onclick="filterOrders('shipped')">Shipped</button>
+      <button class="filter-btn" onclick="filterOrders('delivered')">Delivered</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Orders</h2><button class="action-btn" onclick="loadOrders()">🔄 Refresh</button></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr><th>Order ID</th><th>Customer</th><th>Phone</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="ordersBody">
+            <tr><td colspan="9" style="text-align:center;padding:30px;color:#94a3b8">Loading orders...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCTS TAB -->
+  <div id="tab-products" style="display:none">
+    <div class="card" style="padding:20px;margin-bottom:20px">
+      <h2 style="margin-bottom:16px">➕ Add New Product</h2>
+      <div class="form-grid">
+        <div class="form-group"><label>Product Name *</label><input id="pName" placeholder="e.g. Cotton T-Shirt"></div>
+        <div class="form-group"><label>Category *</label><input id="pCat" placeholder="e.g. Clothing"></div>
+        <div class="form-group"><label>Price (₹) *</label><input id="pPrice" type="number" placeholder="399"></div>
+        <div class="form-group"><label>Stock</label><input id="pStock" type="number" placeholder="100"></div>
+        <div class="form-group full"><label>Description</label><input id="pDesc" placeholder="Short product description"></div>
+        <div class="form-group full"><label>Image URL (optional)</label><input id="pImg" placeholder="https://..."></div>
+      </div>
+      <button class="submit-btn" onclick="addProduct()">Add Product</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>All Products</h2><button class="action-btn" onclick="loadProducts()">🔄 Refresh</button></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="productsBody"><tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="tab-settings" style="display:none">
+    <div class="wa-test">
+      <h3>🟢 WhatsApp Test</h3>
+      <p style="font-size:0.85rem;color:#166534;margin-bottom:10px">Send a test message to verify WhatsApp is working</p>
+      <div class="wa-row">
+        <input id="testPhone" placeholder="Enter phone number (10 digits)">
+        <button class="action-btn green" onclick="sendTestWA()">Send Test</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:20px">
+      <h2 style="margin-bottom:16px">⚙️ Store Settings</h2>
+      <div class="settings-grid">
+        <div class="form-group"><label>Shop Name</label><input id="sShopName"></div>
+        <div class="form-group"><label>Shop Phone</label><input id="sShopPhone" placeholder="10-digit number"></div>
+        <div class="form-group"><label>UPI ID</label><input id="sUpiId" placeholder="yourname@upi"></div>
+        <div class="form-group"><label>Delivery Charge (₹)</label><input id="sDelivery" type="number"></div>
+        <div class="form-group"><label>Free Delivery Above (₹)</label><input id="sFreeAbove" type="number"></div>
+      </div>
+      <button class="submit-btn" onclick="saveSettings()">💾 Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+const KEY = new URLSearchParams(location.search).get('key') || '';
+let currentFilter = '';
+
+function api(path, opts={}) {
+  const sep = path.includes('?') ? '&' : '?';
+  return fetch(path + sep + 'key=' + KEY, opts).then(r => r.json());
+}
+
+function showNotif(msg, good=true) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.style.background = good ? '#16a34a' : '#dc2626';
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), 3000);
+}
+
+function switchTab(name) {
+  ['orders','products','settings'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name ? 'block' : 'none';
+    document.querySelectorAll('.tab')[['orders','products','settings'].indexOf(t)].classList.toggle('active', t===name);
+  });
+  if (name==='orders') { loadStats(); loadOrders(); }
+  if (name==='products') loadProducts();
+  if (name==='settings') loadSettings();
+}
+
+async function loadStats() {
+  const s = await api('/api/admin/stats');
+  document.getElementById('statTotal').textContent = s.total_orders;
+  document.getElementById('statRevenue').textContent = '₹' + Number(s.total_revenue).toLocaleString('en-IN');
+  document.getElementById('statPending').textContent = s.pending;
+  document.getElementById('statDelivered').textContent = s.delivered;
+}
+
+async function loadOrders(filter) {
+  if (filter !== undefined) currentFilter = filter;
+  const url = '/api/admin/orders' + (currentFilter ? '?status='+currentFilter : '');
+  const orders = await api(url);
+  const tbody = document.getElementById('ordersBody');
+  if (!orders.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:#94a3b8">No orders found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = orders.map(o => {
+    const items = JSON.parse(o.items);
+    const itemsText = items.map(i=>`${i.name} x${i.qty}`).join(', ');
+    return `<tr>
+      <td><strong>${o.order_id}</strong></td>
+      <td>${o.customer_name}</td>
+      <td><a href="https://wa.me/91${o.customer_phone}" target="_blank">📱 ${o.customer_phone}</a></td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${itemsText}">${itemsText}</td>
+      <td><strong>₹${o.total}</strong></td>
+      <td>
+        ${o.payment_method}<br>
+        <span class="status-badge p-${o.payment_status}">${o.payment_status}</span>
+        ${o.payment_status==='pending' ? `<button class="action-btn green" style="margin-top:4px" onclick="markPaid('${o.order_id}')">Mark Paid</button>` : ''}
+      </td>
+      <td>
+        <select class="status-select" onchange="updateStatus('${o.order_id}', this.value)">
+          ${['placed','confirmed','shipped','out_for_delivery','delivered','cancelled'].map(s=>`<option value="${s}" ${o.order_status===s?'selected':''}>${s.replace(/_/g,' ')}</option>`).join('')}
+        </select>
+      </td>
+      <td style="font-size:0.8rem;color:#64748b">${new Date(o.created_at).toLocaleDateString('en-IN')}</td>
+      <td>
+        <button class="action-btn" onclick="sendWA('${o.customer_phone}','${o.order_id}')">💬 WA</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterOrders(status) {
+  currentFilter = status;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  loadOrders();
+}
+
+async function updateStatus(orderId, status) {
+  await api(`/api/admin/order/${orderId}/status`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({status})
+  });
+  showNotif(`Order ${orderId} → ${status}`);
+  loadStats();
+}
+
+async function markPaid(orderId) {
+  const ref = prompt('Enter UPI reference number (or press OK to skip):') || '';
+  await api(`/api/admin/order/${orderId}/payment`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({status:'paid', upi_ref: ref})
+  });
+  showNotif('Payment marked as paid!');
+  loadOrders();
+}
+
+function sendWA(phone, orderId) {
+  window.open(`https://wa.me/91${phone}?text=Hi! Regarding your order ${orderId} - `, '_blank');
+}
+
+async function loadProducts() {
+  const prods = await api('/api/admin/products');
+  const tbody = document.getElementById('productsBody');
+  tbody.innerHTML = prods.map(p => `<tr>
+    <td>${p.id}</td>
+    <td>${p.name}</td>
+    <td>${p.category}</td>
+    <td>₹${p.price}</td>
+    <td>${p.stock}</td>
+    <td><span class="status-badge ${p.active?'s-confirmed':'s-cancelled'}">${p.active?'Active':'Hidden'}</span></td>
+    <td>
+      <button class="action-btn" onclick="toggleProduct(${p.id}, ${p.active})">${p.active?'Hide':'Show'}</button>
+      <button class="action-btn red" onclick="deleteProduct(${p.id})">Delete</button>
+    </td>
+  </tr>`).join('');
+}
+
+async function addProduct() {
+  const name = document.getElementById('pName').value.trim();
+  const price = document.getElementById('pPrice').value;
+  if (!name || !price) { showNotif('Name and price required', false); return; }
+  await api('/api/admin/product', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      name, price, category: document.getElementById('pCat').value || 'General',
+      description: document.getElementById('pDesc').value,
+      image_url: document.getElementById('pImg').value,
+      stock: document.getElementById('pStock').value || 100
+    })
+  });
+  showNotif('Product added!');
+  ['pName','pPrice','pCat','pDesc','pImg','pStock'].forEach(id => document.getElementById(id).value='');
+  loadProducts();
+}
+
+async function toggleProduct(id, active) {
+  await api(`/api/admin/product/${id}`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({active: active ? 0 : 1})
+  });
+  loadProducts();
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Delete this product?')) return;
+  await api(`/api/admin/product/${id}`, { method: 'DELETE' });
+  showNotif('Product deleted');
+  loadProducts();
+}
+
+async function loadSettings() {
+  const s = await api('/api/admin/settings');
+  document.getElementById('sShopName').value = s.shop_name || '';
+  document.getElementById('sShopPhone').value = s.shop_phone || '';
+  document.getElementById('sUpiId').value = s.upi_id || '';
+  document.getElementById('sDelivery').value = s.delivery_charge || '40';
+  document.getElementById('sFreeAbove').value = s.free_delivery_above || '500';
+}
+
+async function saveSettings() {
+  await api('/api/admin/settings', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      shop_name: document.getElementById('sShopName').value,
+      shop_phone: document.getElementById('sShopPhone').value,
+      upi_id: document.getElementById('sUpiId').value,
+      delivery_charge: document.getElementById('sDelivery').value,
+      free_delivery_above: document.getElementById('sFreeAbove').value
+    })
+  });
+  showNotif('Settings saved!');
+}
+
+async function sendTestWA() {
+  const phone = document.getElementById('testPhone').value.trim();
+  if (!phone) { showNotif('Enter phone number', false); return; }
+  const res = await fetch('/api/order', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      customer_name: 'Test Customer', customer_phone: phone,
+      customer_address: 'Test Address', items: [{id:0,name:'Test Item',price:99,qty:1}],
+      total: 99, payment_method: 'COD'
+    })
+  });
+  const data = await res.json();
+  showNotif(data.success ? 'Test order sent! Check WhatsApp.' : 'Check WhatsApp token in settings');
+}
+
+// Init
+loadStats();
+loadOrders();
+</script>
+</body>
+</html>

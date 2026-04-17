@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopBot 2 Store</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+
+  /* Header */
+  header { background: #2563eb; color: white; padding: 12px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .header-inner { max-width: 1100px; margin: auto; display: flex; justify-content: space-between; align-items: center; }
+  .logo { font-size: 1.4rem; font-weight: 700; }
+  .cart-btn { background: white; color: #2563eb; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.95rem; }
+  .cart-btn:hover { background: #e0e7ff; }
+
+  /* Hero */
+  .hero { background: linear-gradient(135deg, #1d4ed8, #7c3aed); color: white; text-align: center; padding: 50px 20px; }
+  .hero h1 { font-size: 2.2rem; margin-bottom: 10px; }
+  .hero p { font-size: 1.1rem; opacity: 0.9; }
+
+  /* Categories */
+  .categories { display: flex; gap: 10px; padding: 20px; overflow-x: auto; max-width: 1100px; margin: auto; }
+  .cat-btn { background: white; border: 2px solid #e5e7eb; padding: 8px 18px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.9rem; transition: all 0.2s; }
+  .cat-btn.active, .cat-btn:hover { background: #2563eb; color: white; border-color: #2563eb; }
+
+  /* Products */
+  .products-section { max-width: 1100px; margin: auto; padding: 10px 20px 40px; }
+  .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+  .product-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.2s; }
+  .product-card:hover { transform: translateY(-3px); }
+  .product-img { width: 100%; height: 160px; object-fit: cover; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+  .product-info { padding: 12px; }
+  .product-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+  .product-desc { font-size: 0.8rem; color: #666; margin-bottom: 8px; }
+  .product-price { font-size: 1.1rem; font-weight: 700; color: #2563eb; margin-bottom: 10px; }
+  .add-btn { width: 100%; background: #2563eb; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+  .add-btn:hover { background: #1d4ed8; }
+
+  /* Cart Sidebar */
+  .cart-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; }
+  .cart-overlay.open { display: block; }
+  .cart-sidebar { position: fixed; right: 0; top: 0; bottom: 0; width: 360px; background: white; z-index: 201; display: flex; flex-direction: column; box-shadow: -4px 0 20px rgba(0,0,0,0.15); transform: translateX(100%); transition: transform 0.3s; }
+  .cart-sidebar.open { transform: translateX(0); }
+  .cart-header { padding: 16px 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+  .cart-header h2 { font-size: 1.2rem; }
+  .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+  .cart-items { flex: 1; overflow-y: auto; padding: 16px; }
+  .cart-item { display: flex; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f3f4f6; }
+  .cart-item-info { flex: 1; }
+  .cart-item-name { font-weight: 600; font-size: 0.9rem; }
+  .cart-item-price { color: #2563eb; font-weight: 600; }
+  .qty-controls { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .qty-btn { background: #f3f4f6; border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 1rem; font-weight: 700; }
+  .cart-footer { padding: 16px 20px; border-top: 1px solid #e5e7eb; }
+  .cart-total { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; }
+  .checkout-btn { width: 100%; background: #16a34a; color: white; border: none; padding: 14px; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; }
+  .checkout-btn:hover { background: #15803d; }
+  .empty-cart { text-align: center; padding: 40px 20px; color: #999; }
+
+  /* Checkout Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 300; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 28px; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { margin-bottom: 20px; font-size: 1.3rem; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.9rem; }
+  .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; }
+  .payment-options { display: flex; gap: 10px; margin-top: 6px; }
+  .pay-opt { flex: 1; border: 2px solid #e5e7eb; border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; }
+  .pay-opt.selected { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+  .place-order-btn { width: 100%; background: #2563eb; color: white; border: none; padding: 14px; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 10px; }
+  .place-order-btn:hover { background: #1d4ed8; }
+  .cancel-btn { width: 100%; background: #f3f4f6; color: #333; border: none; padding: 12px; border-radius: 10px; font-size: 0.95rem; cursor: pointer; margin-top: 8px; }
+
+  /* Success Modal */
+  .success-modal { text-align: center; padding: 10px; }
+  .success-icon { font-size: 4rem; margin-bottom: 16px; }
+  .success-modal h2 { color: #16a34a; margin-bottom: 10px; }
+  .order-id-box { background: #f0fdf4; border: 2px dashed #16a34a; border-radius: 10px; padding: 14px; margin: 16px 0; font-size: 1.3rem; font-weight: 700; color: #15803d; }
+
+  /* Track Order */
+  .track-section { background: white; max-width: 500px; margin: 30px auto; padding: 24px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .track-section h3 { margin-bottom: 14px; font-size: 1.1rem; }
+  .track-input-row { display: flex; gap: 10px; }
+  .track-input-row input { flex: 1; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+  .track-input-row button { background: #2563eb; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+  .track-result { margin-top: 14px; padding: 14px; background: #f0f9ff; border-radius: 8px; display: none; }
+  .status-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+  .status-placed { background: #fef9c3; color: #854d0e; }
+  .status-confirmed { background: #dcfce7; color: #166534; }
+  .status-shipped { background: #dbeafe; color: #1e40af; }
+  .status-out_for_delivery { background: #fce7f3; color: #9d174d; }
+  .status-delivered { background: #d1fae5; color: #065f46; }
+  .status-cancelled { background: #fee2e2; color: #991b1b; }
+
+  /* Notification */
+  .notif { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 12px 24px; border-radius: 24px; font-size: 0.9rem; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .notif.show { opacity: 1; }
+
+  @media (max-width: 480px) {
+    .cart-sidebar { width: 100%; }
+    .hero h1 { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo" id="shopName">🛍️ ShopBot Store</div>
+    <button class="cart-btn" onclick="openCart()">🛒 Cart (<span id="cartCount">0</span>)</button>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>Welcome to our Store!</h1>
+  <p>Fast delivery • COD & UPI • WhatsApp updates</p>
+</div>
+
+<!-- Categories -->
+<div class="categories" id="categoriesRow">
+  <button class="cat-btn active" onclick="filterCategory('')">All</button>
+</div>
+
+<!-- Products -->
+<div class="products-section">
+  <div class="products-grid" id="productsGrid"></div>
+</div>
+
+<!-- Track Order -->
+<div class="track-section">
+  <h3>📦 Track Your Order</h3>
+  <div class="track-input-row">
+    <input type="text" id="trackInput" placeholder="Enter Order ID e.g. SB04171234" style="text-transform:uppercase">
+    <button onclick="trackOrder()">Track</button>
+  </div>
+  <div class="track-result" id="trackResult"></div>
+</div>
+
+<!-- Cart Sidebar -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-sidebar" id="cartSidebar">
+  <div class="cart-header">
+    <h2>🛒 Your Cart</h2>
+    <button class="close-btn" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-footer" id="cartFooter" style="display:none">
+    <div class="cart-total"><span>Total</span><span id="cartTotal">₹0</span></div>
+    <button class="checkout-btn" onclick="openCheckout()">Proceed to Checkout →</button>
+  </div>
+</div>
+
+<!-- Checkout Modal -->
+<div class="modal-overlay" id="checkoutModal">
+  <div class="modal">
+    <h2>📋 Complete Your Order</h2>
+    <div class="form-group">
+      <label>Full Name *</label>
+      <input type="text" id="custName" placeholder="Your name">
+    </div>
+    <div class="form-group">
+      <label>WhatsApp Number *</label>
+      <input type="tel" id="custPhone" placeholder="10-digit mobile number">
+    </div>
+    <div class="form-group">
+      <label>Delivery Address *</label>
+      <textarea id="custAddress" rows="3" placeholder="Full address with pincode"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Order Notes (optional)</label>
+      <input type="text" id="custNotes" placeholder="Any special instructions">
+    </div>
+    <div class="form-group">
+      <label>Payment Method *</label>
+      <div class="payment-options">
+        <div class="pay-opt selected" id="payUPI" onclick="selectPayment('UPI')">💳 UPI</div>
+        <div class="pay-opt" id="payCOD" onclick="selectPayment('COD')">💵 Cash on Delivery</div>
+      </div>
+    </div>
+    <div id="upiInfo" style="background:#eff6ff;padding:12px;border-radius:8px;margin-bottom:12px;font-size:0.9rem;display:none">
+      📱 After placing order, you'll receive UPI ID on WhatsApp. Send payment & share screenshot.
+    </div>
+    <button class="place-order-btn" onclick="placeOrder()">🛍️ Place Order</button>
+    <button class="cancel-btn" onclick="closeCheckout()">Cancel</button>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal">
+    <div class="success-modal">
+      <div class="success-icon">✅</div>
+      <h2>Order Placed!</h2>
+      <p>Your order has been received. Check WhatsApp for confirmation!</p>
+      <div class="order-id-box" id="successOrderId">SB...</div>
+      <p style="color:#666;font-size:0.9rem">📱 WhatsApp confirmation sent to your number</p>
+      <button class="place-order-btn" onclick="closeSuccess()" style="margin-top:20px">Continue Shopping</button>
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+let cart = {};
+let products = [];
+let settings = {};
+let selectedPayment = 'UPI';
+
+async function init() {
+  const [prods, cats, sets] = await Promise.all([
+    fetch('/api/products').then(r=>r.json()),
+    fetch('/api/categories').then(r=>r.json()),
+    fetch('/api/settings/public').then(r=>r.json())
+  ]);
+  products = prods;
+  settings = sets;
+  if (sets.shop_name) {
+    document.getElementById('shopName').textContent = '🛍️ ' + sets.shop_name;
+    document.title = sets.shop_name;
+  }
+  const catRow = document.getElementById('categoriesRow');
+  cats.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn';
+    btn.textContent = cat;
+    btn.onclick = () => filterCategory(cat);
+    catRow.appendChild(btn);
+  });
+  renderProducts(products);
+}
+
+function renderProducts(list) {
+  const grid = document.getElementById('productsGrid');
+  grid.innerHTML = list.map(p => `
+    <div class="product-card">
+      <div class="product-img">${p.image_url ? `<img src="${p.image_url}" style="width:100%;height:100%;object-fit:cover">` : '🛍️'}</div>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-desc">${p.description || ''}</div>
+        <div class="product-price">₹${p.price}</div>
+        <button class="add-btn" onclick="addToCart(${p.id}, '${p.name}', ${p.price})">Add to Cart</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterCategory(cat) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderProducts(cat ? products.filter(p=>p.category===cat) : products);
+}
+
+function addToCart(id, name, price) {
+  if (cart[id]) cart[id].qty++;
+  else cart[id] = { id, name, price, qty: 1 };
+  updateCartUI();
+  showNotif(`${name} added to cart!`);
+}
+
+function updateCartUI() {
+  const count = Object.values(cart).reduce((s,i)=>s+i.qty,0);
+  document.getElementById('cartCount').textContent = count;
+  const itemsEl = document.getElementById('cartItems');
+  const items = Object.values(cart);
+  if (!items.length) {
+    itemsEl.innerHTML = '<div class="empty-cart">🛒<br>Your cart is empty</div>';
+    document.getElementById('cartFooter').style.display = 'none';
+    return;
+  }
+  document.getElementById('cartFooter').style.display = 'block';
+  itemsEl.innerHTML = items.map(i => `
+    <div class="cart-item">
+      <div class="cart-item-info">
+        <div class="cart-item-name">${i.name}</div>
+        <div class="cart-item-price">₹${i.price} each</div>
+        <div class="qty-controls">
+          <button class="qty-btn" onclick="changeQty(${i.id},-1)">−</button>
+          <span>${i.qty}</span>
+          <button class="qty-btn" onclick="changeQty(${i.id},1)">+</button>
+          <span style="color:#2563eb;font-weight:600;margin-left:8px">₹${i.price*i.qty}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  const subtotal = items.reduce((s,i)=>s+i.price*i.qty, 0);
+  const deliveryCharge = parseInt(settings.delivery_charge || 40);
+  const freeAbove = parseInt(settings.free_delivery_above || 500);
+  const delivery = subtotal >= freeAbove ? 0 : deliveryCharge;
+  const total = subtotal + delivery;
+  document.getElementById('cartTotal').innerHTML = delivery > 0 ?
+    `₹${subtotal} + ₹${delivery} delivery = ₹${total}` : `₹${total} (Free delivery!)`;
+}
+
+function changeQty(id, delta) {
+  if (!cart[id]) return;
+  cart[id].qty += delta;
+  if (cart[id].qty <= 0) delete cart[id];
+  updateCartUI();
+}
+
+function getTotal() {
+  const subtotal = Object.values(cart).reduce((s,i)=>s+i.price*i.qty, 0);
+  const deliveryCharge = parseInt(settings.delivery_charge || 40);
+  const freeAbove = parseInt(settings.free_delivery_above || 500);
+  return subtotal + (subtotal >= freeAbove ? 0 : deliveryCharge);
+}
+
+function openCart() {
+  document.getElementById('cartOverlay').classList.add('open');
+  document.getElementById('cartSidebar').classList.add('open');
+}
+function closeCart() {
+  document.getElementById('cartOverlay').classList.remove('open');
+  document.getElementById('cartSidebar').classList.remove('open');
+}
+function openCheckout() {
+  closeCart();
+  document.getElementById('checkoutModal').classList.add('open');
+}
+function closeCheckout() {
+  document.getElementById('checkoutModal').classList.remove('open');
+}
+function closeSuccess() {
+  document.getElementById('successModal').classList.remove('open');
+}
+
+function selectPayment(method) {
+  selectedPayment = method;
+  document.getElementById('payUPI').classList.toggle('selected', method==='UPI');
+  document.getElementById('payCOD').classList.toggle('selected', method==='COD');
+  document.getElementById('upiInfo').style.display = method==='UPI' ? 'block' : 'none';
+}
+
+async function placeOrder() {
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const address = document.getElementById('custAddress').value.trim();
+  if (!name || !phone || !address) { showNotif('Please fill all required fields'); return; }
+  if (phone.length < 10) { showNotif('Enter valid phone number'); return; }
+  if (!Object.keys(cart).length) { showNotif('Your cart is empty'); return; }
+
+  const items = Object.values(cart).map(i=>({ id:i.id, name:i.name, price:i.price, qty:i.qty }));
+  const btn = document.querySelector('.place-order-btn');
+  btn.textContent = 'Placing Order...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/order', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ customer_name:name, customer_phone:phone, customer_address:address, items, total:getTotal(), payment_method:selectedPayment, notes:document.getElementById('custNotes').value })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeCheckout();
+      cart = {};
+      updateCartUI();
+      document.getElementById('successOrderId').textContent = data.order_id;
+      document.getElementById('successModal').classList.add('open');
+    } else {
+      showNotif('Error: ' + (data.error || 'Please try again'));
+    }
+  } catch(e) {
+    showNotif('Network error. Please try again.');
+  }
+  btn.textContent = '🛍️ Place Order';
+  btn.disabled = false;
+}
+
+async function trackOrder() {
+  const id = document.getElementById('trackInput').value.trim().toUpperCase();
+  if (!id) return;
+  const res = await fetch('/api/track/' + id);
+  const result = document.getElementById('trackResult');
+  result.style.display = 'block';
+  if (res.ok) {
+    const o = await res.json();
+    result.innerHTML = `
+      <strong>Order ${o.order_id}</strong><br>
+      <span class="status-badge status-${o.order_status}">${o.order_status.replace(/_/g,' ').toUpperCase()}</span>
+      <br><br>
+      👤 ${o.customer_name}<br>
+      💰 Total: ₹${o.total}<br>
+      💳 Payment: <strong>${o.payment_status.toUpperCase()}</strong><br>
+      📅 Placed: ${new Date(o.created_at).toLocaleDateString('en-IN')}
+    `;
+  } else {
+    result.innerHTML = '❌ Order not found. Check your Order ID.';
+  }
+}
+
+function showNotif(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
